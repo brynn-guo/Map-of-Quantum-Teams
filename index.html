@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+	    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+		<title>毕业数据可视化</title>
+		<link rel="stylesheet" href="css/bootstrap.min.css" />
+		<link rel="stylesheet" href="css/app.css" />
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome/css/font-awesome.min.css">
+	</head>
+	
+	<body class="bg01">
+		<header class="header">
+			<h3>毕业数据可视化</h3>
+		</header>
+		
+		<div class="wrapper">
+			<div class="container-fluid">
+				<div class="row fill-h">
+					<div class="col-lg-3 fill-h">
+						<div class="xpanel-wrapper xpanel-wrapper-2">
+							<div class="xpanel">
+								<!-- 地图飞线 -->
+								<div class="fill-h" id="flyMap"></div>
+							</div>
+						</div>
+					</div>
+					<div class="col-lg-6 fill-h">
+						<div class="xpanel-wrapper xpanel-wrapper-1">
+							<div class="xpanel">
+								<!-- 地图散点 -->
+								<div class="fill-h" id="scatterMap"></div>
+							</div>
+						</div>
+					</div>
+					<div class="col-lg-3 fill-h">
+						<div class="xpanel-wrapper xpanel-wrapper-3">
+							<div class="xpanel">
+								<!-- 省份地图 -->
+								<div class="fill-h" id="provinceMap"></div>
+							</div>
+						</div>
+						<div class="xpanel-wrapper xpanel-wrapper-3">
+							<div class="xpanel">
+								<!-- 城市地图 -->
+								<div class="fill-h" id="cityMap"></div>
+							</div>
+						</div>
+						<div class="xpanel-wrapper xpanel-wrapper-3">
+							<div class="xpanel">
+								<!-- 区县地图 -->
+								<div class="fill-h" id="countyMap"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+		<script type="text/javascript" src="js/echarts-3.8.5.min.js"></script>
+		<script type="text/javascript" src="js/echarts-map-world.js"></script>
+		<script type="text/javascript" src="js/echarts-map-china.js"></script>
+		<script type="text/javascript" src="js/echarts-china-provinces/jiangsu.js"></script>
+		<script type="text/javascript" src="js/echarts-china-cities/jiang1_su1_su1_zhou1.js"></script>
+		<script type="text/javascript" src="js/echarts-china-counties/jiang1su1_su1zhou1_kun1shan1shi4.js"></script>
+		<script type="text/javascript">
+			$(function() {
+				/******************* 地图飞线 ******************/
+				//初始化echarts实例
+				const flyMap = echarts.init(document.getElementById("flyMap"));
+		        //城市经纬度
+		        const originName = '浙江省舟山市';
+		        const flyGeo = {
+		        	'浙江省舟山市':[122.21, 29.99],'湖南省':[112.95, 28.24],'浙江省':[120.21, 30.25],'山西省':[112.56, 37.88],'吉林省':[125.33, 43.82],'广东省':[113.27, 23.14],'甘肃省':[103.84, 36.07],'湖北省':[114.31, 30.60],'黑龙江省':[126.54, 45.81],'陕西省':[108.94, 34.35],'云南省':[102.84, 24.88],'河南省':[113.63, 34.75],'北京市':[116.40, 39.91],'上海市':[121.48, 31.24],'辽宁省':[123.47, 41.68],
+		        };
+		        //飞线数据
+		        var flyVal = [
+		        		[{name:'浙江省舟山市'}, {name:'浙江省舟山市', value:39}],[{name:'湖南省'}, {name:'浙江省舟山市', value:3}],[{name:'浙江省'}, {name:'浙江省舟山市', value:20}],[{name:'山西省'}, {name:'浙江省舟山市', value:1}],[{name:'吉林省'}, {name:'浙江省舟山市', value:2}],[{name:'广东省'}, {name:'浙江省舟山市', value:1}],[{name:'甘肃省'}, {name:'浙江省舟山市', value:1}],[{name:'湖北省'}, {name:'浙江省舟山市', value:2}],[{name:'黑龙江省'}, {name:'浙江省舟山市', value:2}],[{name:'陕西省'}, {name:'浙江省舟山市', value:1}],[{name:'云南省'}, {name:'浙江省舟山市', value:1}],[{name:'河南省'}, {name:'浙江省舟山市', value:1}],[{name:'北京市'}, {name:'浙江省舟山市', value:1}],[{name:'上海市'}, {name:'浙江省舟山市', value:2}],[{name:'辽宁省'}, {name:'浙江省舟山市', value:1}],
+		        ];
+		        //数据转换，转换后格式：[{fromName:'cityName', toName:'cityName', coords:[[lng, lat], [lng, lat]]}, {...}]
+		        const convertFlyData = function(data) {
+		            let res = [];
+		            for(let i=0;i<data.length;i++) {
+		                let dataItem = data[i];
+		                let toCoord = flyGeo[dataItem[0].name];
+		                let fromCoord = flyGeo[dataItem[1].name];
+		                if(fromCoord && toCoord) {
+		                    res.push({
+		                        fromName: dataItem[1].name, 
+		                        toName: dataItem[0].name, 
+		                        coords: [fromCoord, toCoord]
+		                    });
+		                }
+		            }
+		            return res;
+		        };
+		        //报表配置
+		        const flySeries = [];
+		        [[originName, flyVal]].forEach(function(item, i) {
+					flySeries.push({   
+				        name: item[0],
+				        type: 'lines',
+				        zlevel: 1,
+				        symbol: ['none', 'none'],
+				        symbolSize: 0,
+				        effect: { //特效线配置
+				            show: true,
+				            period: 5, //特效动画时间，单位s
+				            trailLength: 0.1, //特效尾迹的长度，从0到1
+				            symbol: 'arrow',
+				            symbolSize: 5
+				        },
+				        lineStyle: {
+				            normal: {
+				                color: '#f19000',
+				                width: 1,
+				                opacity: 0.6,
+				                curveness: 0.2 //线的平滑度
+				            }
+				        },
+				        data: convertFlyData(item[1])
+				    }, {
+				        name: item[0],
+				        type: 'effectScatter',
+				        coordinateSystem: 'geo',
+				        zlevel: 2,
+				        rippleEffect: { //涟漪特效
+				            period: 5, //特效动画时长 
+				            scale: 4, //波纹的最大缩放比例
+				            brushType: 'stroke' //波纹的绘制方式：stroke | fill
+				        },
+				        label: {
+				            normal: {
+				                show: false,
+				                position: 'right',
+				                formatter: '{b}'
+				            }
+				        },
+				        symbol: 'circle',
+				        symbolSize: function (val) {
+				        	//根据某项数据值设置符号大小
+				            return val[2] / 10; 
+				        },
+				        itemStyle: {
+				            normal: {
+				            	color: '#f19000'
+				            }
+				        },
+				        data: item[1].map(function(dataItem) {
+				            return {
+				                name: dataItem[1].name,
+				                value: flyGeo[dataItem[1].name].concat([dataItem[1].value])
+				            };
+				        })
+				    }, { //与上层的点叠加
+				    	name: item[0],
+				        type: 'scatter',
+				        coordinateSystem: 'geo',
+				        zlevel: 3,
+				        symbol: 'circle',
+				        symbolSize: function (val) {
+				        	//根据某项数据值设置符号大小
+				            return val[2] / 15; 
+				        },
+				        itemStyle: {
+				            normal: {
+				            	color: '#f00'
+				            }
+				        },
+				        data: item[1].map(function(dataItem) {
+				            return {
+				                name: dataItem[1].name,
+				                value: flyGeo[dataItem[1].name].concat([dataItem[1].value])
+				            };
+				        })
+				    });
+		        });
+	
+				//报表配置项
+				const flyMapOpt = {
+					title: {
+						show: false,
+						text: '地图飞线',
+						x: 'center',
+						textStyle: {
+							color: '#fff'
+						}
+					},
+	                tooltip: {
+	                    trigger: 'item',
+	                    formatter: function(params) {
+	                        if(params.value) {
+	                            return params.name + ' : ' + params.value[2];
+	                        }else {
+	                            return params.name;
+	                        }
+	                    }
+	                },
+				    geo: {
+				        map: 'china',
+				        roam: false, //开启鼠标缩放和漫游
+				        zoom: 1, //地图缩放级别
+						selectedMode: false, //选中模式：single | multiple
+						left: 0,
+						right: 0,
+						top: 0,
+						bottom: 0,
+						layoutCenter: ['50%', '50%'], //设置后left/right/top/bottom等属性无效
+						layoutSize: '100%', //保持地图宽高比
+				        label: {
+				            emphasis: {
+				                show: false
+				            }
+				        },
+				        itemStyle: {
+				            normal: {
+				                areaColor: '#101f32',
+				                borderWidth: 1.1,
+				                borderColor: '#43d0d6'
+				            },
+				            emphasis: {
+				                areaColor: '#069'
+				            }
+				        }
+				    },
+				    series: flySeries
+				};
+				//渲染报表
+				flyMap.setOption(flyMapOpt);
+				
+				/***************** 地图散点 ******************/
+				//初始化echarts实例
+				const scatterMap = echarts.init(document.getElementById("scatterMap"));
+				//城市经纬度
+				const scatterGeo = {
+					"湖南省衡阳市珠晖区":[112.62, 26.89],"浙江省杭州市滨江区":[120.15, 30.16],"浙江省嘉兴市海宁市":[120.68, 30.51],"浙江省杭州市江干区":[120.21, 30.26],"山西省太原市小店区":[112.56, 37.74],"吉林省长春市朝阳区":[125.29, 43.83],"广东省佛山市顺德区":[113.29, 22.81],"甘肃省兰州市榆中县":[104.11, 35.84],"湖北省武汉市洪山区":[114.34, 30.50],"黑龙江省齐齐哈尔市建华区":[123.96, 47.35],"浙江省绍兴市越城区":[120.58, 29.99],"浙江省杭州市拱墅区":[120.14, 30.32],"浙江省杭州市西湖区":[120.13, 30.26],"陕西省西安市长安区":[108.91, 34.16],"湖南省湘潭市雨湖区":[112.90, 27.85],"浙江省杭州市临安区":[119.72, 30.23],"浙江省温州市瓯海区":[120.71, 27.91],"湖北省武汉市新洲区":[114.80, 30.84],"浙江省丽水市莲都区":[119.91, 28.45],"湖南省长沙市岳麓区":[112.93, 28.24],"黑龙江省哈尔滨市南岗区":[126.67, 45.76],"云南省昆明市呈贡区":[102.82, 24.89],"浙江省金华市婺城区":[119.57, 29.09],"上海市长宁区":[121.42, 31.22],"河南省洛阳市洛龙区":[112.46, 34.62],"北京市朝阳区":[116.60, 39.95],"浙江省宁波市北仑区":[121.84, 29.90],"上海市浦东新区":[121.54, 31.22],"辽宁省沈阳市浑南区":[123.45, 41.71],
+				};
+				//城市数据
+				const scatterVal = [
+						{name:"湖南省衡阳市珠晖区", value:"张馨予"},{name:"浙江省杭州市滨江区", value:"夏思博，戎柯宇，王梓羽"},{name:"浙江省嘉兴市海宁市", value:"唐雯伽"},{name:"浙江省杭州市江干区", value:"张哲源，胡芊雨，洪桁植"},{name:"山西省太原市小店区", value:"张睿阳"},{name:"吉林省长春市朝阳区", value:"胡王利，孙琦"},{name:"广东省佛山市顺德区", value:"方景禾"},{name:"甘肃省兰州市榆中县", value:"刘芊妤"},{name:"湖北省武汉市洪山区", value:"王语嫣"},{name:"黑龙江省齐齐哈尔市建华区", value:"董储瑜"},{name:"浙江省绍兴市越城区", value:"程潇萱"},{name:"浙江省杭州市拱墅区", value:"应宇晨"},{name:"浙江省杭州市西湖区", value:"潘昀哲，虞锴宸，袁愉翔"},{name:"陕西省西安市长安区", value:"姜仁海"},{name:"湖南省湘潭市雨湖区", value:"夏骅艺"},{name:"浙江省杭州市临安区", value:"王佳莼，邬炫钢，黄雨馨"},{name:"浙江省温州市瓯海区", value:"吴望真"},{name:"湖北省武汉市新洲区", value:"虞歆睿"},{name:"浙江省丽水市莲都区", value:"乐雨欣"},{name:"湖南省长沙市岳麓区", value:"王誉桦"},{name:"黑龙江省哈尔滨市南岗区", value:"张诚玮"},{name:"云南省昆明市呈贡区", value:"王孜博"},{name:"浙江省金华市婺城区", value:"陈奕欣，林笑言"},{name:"上海市长宁区", value:"王语睿"},{name:"河南省洛阳市洛龙区", value:"刘晨"},{name:"北京市朝阳区", value:"刘彦茗"},{name:"浙江省宁波市北仑区", value:"舒佳芃"},{name:"上海市浦东新区", value:"黄敏媛"},{name:"辽宁省沈阳市浑南区", value:"许珈豪"},
+				];
+				//数据转换，转换后的格式：[{name: 'cityName', value: [lng, lat, val]}, {...}]
+				const convertScatterData = function(data) {
+				    let res = [];
+				    for(let i=0;i<data.length;i++) {
+				        let geoCoord = scatterGeo[data[i].name];
+				        if(geoCoord) {
+				            res.push({
+				                name: data[i].name,
+				                value: geoCoord.concat(data[i].value)
+				            });
+				        }
+				    }
+				    return res;
+				};
+				//地图配置项
+				const sactterMapOpt = {
+					title: {
+						text: '各学校分布图',
+						x: 'center',
+						textStyle: {
+							color: '#fff'
+						}
+					},
+					legend: {
+						data: ['各校名单'], //与series的name属性对应
+				        orient: 'vertical',
+				        y: 'bottom',
+				        x: 'right',
+				        textStyle: {
+				            color: '#fff'
+				        }
+				    },
+					tooltip: {
+				        trigger: 'item',
+				        formatter: function(params) {
+				            return params.name + ' : ' + params.value[2];
+				        }
+				    },
+					geo: {
+				        map: 'china',
+				        roam: false, //开启鼠标缩放和漫游
+				        zoom: 1, //地图缩放级别
+						selectedMode: false, //选中模式：single | multiple
+						left: 0,
+						right: 0,
+						top: 0,
+						bottom: 0,
+						layoutCenter: ['50%', '50%'], //设置后left/right/top/bottom等属性无效
+						layoutSize: '100%',
+				        label: {
+				            emphasis: {
+				                show: false
+				            }
+				        },
+				        itemStyle: {
+				            normal: {
+				                areaColor: '#101f32',
+				                borderWidth: 1.1,
+				                borderColor: '#43d0d6'
+				            },
+				            emphasis: {
+				                areaColor: '#069'
+				            }
+				        }
+				    },
+				    series: [{
+			            name: 'PM2.5',
+			            type: 'scatter',
+			            coordinateSystem: 'geo',
+			            symbolSize: 12,
+			            label: {
+			                normal: {
+			                    show: false
+			                },
+			                emphasis: {
+			                    show: false
+			                }
+			            },
+			            itemStyle: {
+			                emphasis: {
+			                    borderColor: '#fff',
+			                    borderWidth: 1
+			                }
+			            },
+			            data: convertScatterData(scatterVal)
+			        }]
+				};
+				//渲染报表
+				scatterMap.setOption(sactterMapOpt);
+				
+				/******************* 世界地图 ******************/
+				//初始化echarts实例
+				const worldMap = echarts.init(document.getElementById("worldMap"));
+				const worldMapOpt = {
+					geo: {
+						map: 'world',
+				        roam: false, //开启鼠标缩放和漫游
+				        zoom: 1, //地图缩放级别
+						selectedMode: false, //选中模式：single | multiple
+						left: 0,
+						right: 0,
+						top: 0,
+						bottom: 0,
+						layoutCenter: ['50%', '50%'], //设置后left/right/top/bottom等属性无效
+						layoutSize: '100%',
+				        label: {
+				            emphasis: {
+				                show: false
+				            }
+				        },
+				        itemStyle: {
+				            normal: {
+				                areaColor: '#101f32',
+				                borderWidth: 1.1,
+				                borderColor: '#43d0d6'
+				            },
+				            emphasis: {
+				                areaColor: '#069'
+				            }
+				        }
+					}
+				};
+				worldMap.setOption(worldMapOpt);
+
+				/********** 浏览器窗口改变时，重置报表大小 ****************/
+				window.onresize = function() {
+					flyMap.resize();
+					scatterMap.resize();
+					worldMap.resize();
+					provinceMap.resize();
+					cityMap.resize();
+					countyMap.resize();
+				}
+			});
+		</script>
+		<script src="https://cdn.jsdelivr.net/gh/zryyyy/CDN/js/cursor/fireworks.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/gh/stevenjoezhang/live2d-widget@latest/autoload.js"></script>
+	</body>
+</html>
