@@ -3,7 +3,7 @@
 #### 介绍
 
 **以下是蹭饭地图说明**
-蹭饭地图基于cereslibra的github项目GraduateMapMaker[源码地址](https://gitee.com/enterprises)}
+蹭饭地图基于cereslibra的github项目GraduateMapMaker[源码地址](https://gitee.com/enterprises)
 
 #### 依赖项
 
