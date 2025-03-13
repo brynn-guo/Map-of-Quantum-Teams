@@ -11,7 +11,7 @@ Python
 Excel
 
 #### 使用说明
-直接使用浏览器打开quantum.html即可.
+直接使用浏览器打开quantum_map.html即可.
 
 #### 添加信息说明
 
