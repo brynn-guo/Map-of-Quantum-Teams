@@ -20,7 +20,7 @@ Excel
 3.  修改data.xlsx中的数据 (需要添加机构名称(Institution), 机构经纬度(经度在前,纬度在后,如果画出来不对,试试对调顺序), PI的名字(同一机构请放在同一行内,PI之间的名字以英文逗号间隔,PI名字内不要包含逗号))
 4.  在Powershell中输入`pip install pandas` `pip install xlrd` `pip install openpyxl`(如果已安装请忽略)
 5.  在该文件夹打开终端，输入`python MapMaker.py`
-6. 用浏览器打开quantum.html即可.
+6. 用浏览器打开quantum_map.html即可.
 
 !!!***注意 index.html为母版,信息修改增添不必更改,请谨慎更改.***!!!
 
